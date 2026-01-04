@@ -1,0 +1,321 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id          Int           @id @default(autoincrement())
+  name        String
+  slug        String        @unique
+  isActive    Boolean       @default(true)
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  Course      Course[]
+  SubCategory SubCategory[]
+}
+
+model Certificate {
+  id            Int        @id @default(autoincrement())
+  courseId      Int
+  enrollmentId  Int        @unique
+  userUuid      String     @db.Uuid
+  certificateNo String     @unique
+  issuedAt      DateTime   @default(now())
+  payloadJson   String?
+  qrData        String?
+  Course        Course     @relation(fields: [courseId], references: [id])
+  Enrollment    Enrollment @relation(fields: [enrollmentId], references: [id])
+}
+
+model Course {
+  id                Int                 @id @default(autoincrement())
+  uuid              String              @unique @db.Uuid
+  title             String
+  slug              String              @unique
+  shortDescription  String?
+  description       String?
+  language          String?
+  level             String?
+  thumbnailUrl      String?
+  bannerUrl         String?
+  price             Decimal             @default(0)
+  offerPrice        Decimal?
+  currency          String              @default("BDT")
+  categoryId        Int?
+  subCategoryId     Int?
+  visibility        CourseVisibility    @default(PUBLIC)
+  organizationUuid  String?             @db.Uuid
+  status            CourseStatus        @default(DRAFT)
+  publishedAt       DateTime?
+  isFeatured        Boolean             @default(false)
+  ratingAvg         Decimal             @default(0)
+  ratingCount       Int                 @default(0)
+  enrollmentCount   Int                 @default(0)
+  createdByUserUuid String?             @db.Uuid
+  updatedByUserUuid String?             @db.Uuid
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  deletedAt         DateTime?
+  Certificate       Certificate[]
+  Category          Category?           @relation(fields: [categoryId], references: [id])
+  SubCategory       SubCategory?        @relation(fields: [subCategoryId], references: [id])
+  CourseAllowedUser CourseAllowedUser[]
+  CourseReview      CourseReview[]
+  CourseSection     CourseSection[]
+  Enrollment        Enrollment[]
+  Lecture           Lecture[]
+  Quiz              Quiz[]
+}
+
+model CourseAllowedUser {
+  id        Int      @id @default(autoincrement())
+  courseId  Int
+  userUuid  String   @db.Uuid
+  createdAt DateTime @default(now())
+  Course    Course   @relation(fields: [courseId], references: [id])
+
+  @@unique([courseId, userUuid])
+}
+
+model CourseReview {
+  id        Int      @id @default(autoincrement())
+  courseId  Int
+  userUuid  String   @db.Uuid
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  Course    Course   @relation(fields: [courseId], references: [id])
+
+  @@unique([courseId, userUuid])
+}
+
+model CourseSection {
+  id        Int       @id @default(autoincrement())
+  courseId  Int
+  title     String
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Course    Course    @relation(fields: [courseId], references: [id])
+  Lecture   Lecture[]
+  Quiz      Quiz[]
+}
+
+model Employee {
+  id               Int       @id @default(autoincrement())
+  authUserId       String    @unique @db.VarChar(36)
+  fullName         String
+  fatherName       String?
+  motherName       String?
+  dateOfBirth      DateTime?
+  gender           Gender?
+  phone            String    @unique
+  email            String    @unique
+  presentAddress   Json?
+  permanentAddress Json?
+  education        Json?
+  experiences      Json?
+  skills           Json?
+  trainings        Json?
+  passportNumber   String?
+  passportIssueAt  DateTime?
+  passportExpireAt DateTime?
+  passportFileUrl  String?
+  profilePhotoUrl  String?
+  otherDocs        Json?
+  isCompleted      Boolean   @default(false)
+  isVerified       Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model Enrollment {
+  id              Int               @id @default(autoincrement())
+  courseId        Int
+  userUuid        String            @db.Uuid
+  status          EnrollmentStatus  @default(NOT_STARTED)
+  progressPercent Int               @default(0)
+  enrolledAt      DateTime          @default(now())
+  completedAt     DateTime?
+  Certificate     Certificate?
+  Course          Course            @relation(fields: [courseId], references: [id])
+  LectureProgress LectureProgress[]
+  QuizAttempt     QuizAttempt[]
+
+  @@unique([courseId, userUuid])
+}
+
+model Lecture {
+  id              Int                @id @default(autoincrement())
+  courseId        Int
+  sectionId       Int
+  title           String
+  contentType     LectureContentType @default(VIDEO)
+  contentUrl      String?
+  articleHtml     String?
+  durationSec     Int                @default(0)
+  isPreview       Boolean            @default(false)
+  sortOrder       Int                @default(0)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime
+  Course          Course             @relation(fields: [courseId], references: [id])
+  CourseSection   CourseSection      @relation(fields: [sectionId], references: [id])
+  LectureProgress LectureProgress[]
+}
+
+model LectureProgress {
+  id              Int        @id @default(autoincrement())
+  enrollmentId    Int
+  lectureId       Int
+  isCompleted     Boolean    @default(false)
+  lastPositionSec Int        @default(0)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime
+  Enrollment      Enrollment @relation(fields: [enrollmentId], references: [id])
+  Lecture         Lecture    @relation(fields: [lectureId], references: [id])
+
+  @@unique([enrollmentId, lectureId])
+}
+
+model OutboxEvent {
+  id          String    @id
+  aggregateId String
+  type        String
+  payload     Json
+  createdAt   DateTime  @default(now())
+  publishedAt DateTime?
+  attempts    Int       @default(0)
+  lastError   String?
+
+  @@index([type, publishedAt])
+}
+
+model Quiz {
+  id            Int            @id @default(autoincrement())
+  courseId      Int
+  sectionId     Int
+  title         String
+  timeLimitSec  Int?
+  passMark      Int            @default(60)
+  sortOrder     Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  Course        Course         @relation(fields: [courseId], references: [id])
+  CourseSection CourseSection  @relation(fields: [sectionId], references: [id])
+  QuizAttempt   QuizAttempt[]
+  QuizQuestion  QuizQuestion[]
+}
+
+model QuizAttempt {
+  id           Int        @id @default(autoincrement())
+  enrollmentId Int
+  quizId       Int
+  scorePercent Int
+  isPassed     Boolean
+  answersJson  String?
+  createdAt    DateTime   @default(now())
+  correctCount Int
+  wrongCount   Int
+  Enrollment   Enrollment @relation(fields: [enrollmentId], references: [id])
+  Quiz         Quiz       @relation(fields: [quizId], references: [id])
+
+  @@index([enrollmentId, quizId])
+  @@index([quizId, createdAt])
+}
+
+model QuizOption {
+  id           Int          @id @default(autoincrement())
+  questionId   Int
+  text         String
+  isCorrect    Boolean      @default(false)
+  QuizQuestion QuizQuestion @relation(fields: [questionId], references: [id])
+}
+
+model QuizQuestion {
+  id         Int          @id @default(autoincrement())
+  quizId     Int
+  prompt     String
+  sortOrder  Int          @default(0)
+  QuizOption QuizOption[]
+  Quiz       Quiz         @relation(fields: [quizId], references: [id])
+}
+
+model RefreshToken {
+  id                String    @id
+  userId            String
+  tokenHash         String
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  createdAt         DateTime  @default(now())
+  replacedByTokenId String?
+  tokenId           String    @unique
+  User              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([userId])
+}
+
+model SubCategory {
+  id         Int      @id @default(autoincrement())
+  categoryId Int
+  name       String
+  slug       String   @unique
+  isActive   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  Course     Course[]
+  Category   Category @relation(fields: [categoryId], references: [id])
+}
+
+model User {
+  id           String         @id
+  email        String         @unique
+  passwordHash String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  status       String         @default("ACTIVE")
+  phone        String?        @unique
+  RefreshToken RefreshToken[]
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CourseVisibility {
+  PUBLIC
+  ORG_ONLY
+  PRIVATE_USERS
+}
+
+enum EnrollmentStatus {
+  NOT_STARTED
+  ACTIVE
+  COMPLETED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum LectureContentType {
+  VIDEO
+  ARTICLE
+  PDF
+  EMBED
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}

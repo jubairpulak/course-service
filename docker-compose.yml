@@ -1,0 +1,54 @@
+services:
+  course-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: course-service-dev
+
+    ports:
+      - "4006:4006"
+    networks:
+      - auth-service_authnet
+    env_file:
+      - .env
+    command: npm run start:dev
+
+    depends_on:
+      redis:
+        condition: service_started
+
+    develop:
+      watch:
+        # hot reload source
+        - action: sync
+          path: .
+          target: /app
+          ignore:
+            - node_modules/
+            - dist/
+            - .git/
+            - coverage/
+            - "*.log"
+
+        # rebuild on dependency / prisma change
+        - action: rebuild
+          path: package.json
+        - action: rebuild
+          path: package-lock.json
+        - action: rebuild
+          path: prisma/schema.prisma
+
+
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-employee-dev
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:
+networks:
+  auth-service_authnet:
+    external: true
