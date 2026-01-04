@@ -9,6 +9,7 @@ import { CreateCategoryDto, UpdateCategoryDto } from './admin/dto/category.dto';
 import { CreateSubCategoryDto, UpdateSubCategoryDto } from './admin/dto/subcategory.dto';
 import { CreateCourseDto, UpdateCourseDto } from './admin/dto/course.dto';
 import { UpdateProgressDto, SubmitQuizDto, SubmitReviewDto } from './me/dto/me.dto';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class CourseService {
@@ -456,7 +457,7 @@ export class CourseService {
     return this.prisma.subCategory.delete({ where: { id } });
   }
 
-  async createCourse(dto: CreateCourseDto) {
+  async createCourse(dto: CreateCourseDto, sub:string) {
     if (dto.visibility === 'ORG_ONLY' && !dto.organizationUuid) {
       throw new BadRequestException('organizationUuid required for ORG_ONLY');
     }
@@ -466,7 +467,7 @@ export class CourseService {
 
     return this.prisma.course.create({
       data: {
-        uuid: dto.uuid,
+        uuid: randomUUID(),
         title: dto.title,
         slug: dto.slug,
         shortDescription: dto.shortDescription,
@@ -484,6 +485,7 @@ export class CourseService {
         status: dto.status as any,
         publishedAt,
         isFeatured: dto.isFeatured ?? false,
+        createdByUserUuid:sub
       },
     });
   }

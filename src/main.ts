@@ -50,7 +50,7 @@ app.enableCors({
     swaggerOptions: { persistAuthorization: true },
   });
 
-  const port = Number(process.env.PORT ?? 4005);
+  const port = Number(process.env.PORT ?? 4006);
   await app.listen(port);
 
   const log = app.get(AppLogger);

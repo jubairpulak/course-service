@@ -1,7 +1,7 @@
 // src/course/access.service.ts
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { CourseVisibility } from '@prisma/client';
-import { PrismaService } from '../common/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { JwtUser } from '../common/auth/jwt-user.type';
 
 @Injectable()

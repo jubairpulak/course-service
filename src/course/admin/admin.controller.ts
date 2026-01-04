@@ -1,5 +1,5 @@
 // src/course/admin/admin.controller.ts
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards,   Request as ReqDeco } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { Roles } from '../../common/auth/roles.decorator';
@@ -7,11 +7,14 @@ import { CourseService } from '../course.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 import { CreateSubCategoryDto, UpdateSubCategoryDto } from './dto/subcategory.dto';
 import { CreateCourseDto, SetAllowedUsersDto, UpdateCourseDto } from './dto/course.dto';
+import type { AuthenticatedRequest } from 'passport';
+
+type JwtUser = { sub: string; email?: string; roles?: string[]; tenantId?: string };
 
 @ApiTags('Admin')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard)
-@Roles('ADMIN') // change to your actual admin role string
+// @Roles('ADMIN') // change to your actual admin role string
 @Controller('admin')
 export class AdminController {
   constructor(private readonly courses: CourseService) {}
@@ -29,7 +32,11 @@ export class AdminController {
   @Delete('subcategories/:id') deleteSub(@Param('id') id: string) { return this.courses.deleteSubCategory(Number(id)); }
 
   // Course CRUD
-  @Post('courses') createCourse(@Body() dto: CreateCourseDto) { return this.courses.createCourse(dto); }
+  @Post('courses') createCourse(@ReqDeco() req: AuthenticatedRequest, @Body() dto: CreateCourseDto) {
+        const user = req.user as JwtUser;
+
+    return this.courses.createCourse(dto, user.sub);
+  }
   @Get('courses') listCourses() { return this.courses.adminListCourses(); }
   @Get('courses/:id') getCourse(@Param('id') id: string) { return this.courses.adminGetCourse(Number(id)); }
   @Patch('courses/:id') updateCourse(@Param('id') id: string, @Body() dto: UpdateCourseDto) { return this.courses.updateCourse(Number(id), dto); }
