@@ -175,7 +175,7 @@ model LectureProgress {
   isCompleted     Boolean    @default(false)
   lastPositionSec Int        @default(0)
   createdAt       DateTime   @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime   @updatedAt
   Enrollment      Enrollment @relation(fields: [enrollmentId], references: [id])
   Lecture         Lecture    @relation(fields: [lectureId], references: [id])
 

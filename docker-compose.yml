@@ -7,8 +7,8 @@ services:
 
     ports:
       - "4006:4006"
-    networks:
-      - auth-service_authnet
+    # networks:
+    #   - auth-service_authnet
     env_file:
       - .env
     command: npm run start:dev
@@ -49,6 +49,6 @@ services:
 
 volumes:
   redis_data:
-networks:
-  auth-service_authnet:
-    external: true
+# networks:
+#   auth-service_authnet:
+#     external: true
